@@ -7,8 +7,9 @@ import './App.css';
 
 // 游戏主组件
 const Game = () => {
-  const { playerState, updatePlayerState, updateCurrentChapter } = usePlayerState();
+  const { playerState, updatePlayerState, updateCurrentChapter, saveGame, loadGame } = usePlayerState();
   const [transitionActive, setTransitionActive] = useState(false);
+  const [saveMessage, setSaveMessage] = useState('');
   
   // 加载当前章节
   const currentChapter = storyData.chapters.find(
@@ -37,6 +38,30 @@ const Game = () => {
     }, 500);
   };
   
+  // 处理保存游戏
+  const handleSaveGame = async () => {
+    const saveId = await saveGame();
+    if (saveId) {
+      setSaveMessage('游戏已保存');
+      setTimeout(() => setSaveMessage(''), 3000);
+    } else {
+      setSaveMessage('保存失败');
+      setTimeout(() => setSaveMessage(''), 3000);
+    }
+  };
+  
+  // 处理加载游戏
+  const handleLoadGame = async () => {
+    const success = await loadGame();
+    if (success) {
+      setSaveMessage('游戏已加载');
+      setTimeout(() => setSaveMessage(''), 3000);
+    } else {
+      setSaveMessage('加载失败');
+      setTimeout(() => setSaveMessage(''), 3000);
+    }
+  };
+  
   // 显示状态栏
   const StatusBar = () => (
     <div className="status-bar">
@@ -49,6 +74,11 @@ const Game = () => {
   return (
     <>
       <StatusBar />
+      <div className="game-controls">
+        <button onClick={handleSaveGame}>保存游戏</button>
+        <button onClick={handleLoadGame}>加载游戏</button>
+        {saveMessage && <span className="save-message">{saveMessage}</span>}
+      </div>
       <main className={transitionActive ? 'fade-out' : 'fade-in'}>
         <StoryDisplay chapter={currentChapter} />
         {currentChapter && <Options options={currentChapter.options} onSelect={handleOptionSelect} />}
