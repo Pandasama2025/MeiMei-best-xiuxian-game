@@ -1,0 +1,209 @@
+/* 水墨画风格主题 CSS */
+
+/* 全局变量 */
+:root {
+  --ink-black: #1a1a1a;
+  --ink-dark: #333333;
+  --ink-medium: #666666;
+  --ink-light: #999999;
+  --ink-pale: #e6e6e6;
+  --paper-white: #f5f5f5;
+  --paper-yellow: #f8f4e3;
+  --accent-red: #8c2e0b;
+}
+
+/* 全局样式 */
+body {
+  background-color: var(--paper-yellow);
+  color: var(--ink-black);
+  font-family: "Ma Shan Zheng", "STKaiti", "KaiTi", serif;
+}
+
+/* 水墨画风格容器 */
+.ink-container {
+  background-color: var(--paper-white);
+  border: 1px solid var(--ink-light);
+  box-shadow: 2px 2px 10px rgba(0, 0, 0, 0.1);
+  padding: 20px;
+  margin: 15px;
+  position: relative;
+  overflow: hidden;
+}
+
+.ink-container::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100" viewBox="0 0 100 100"><rect width="100%" height="100%" fill="none"/><path d="M30,10 Q50,5 70,20 T90,40" stroke="rgba(0,0,0,0.03)" fill="none" stroke-width="2"/></svg>');
+  opacity: 0.3;
+  pointer-events: none;
+}
+
+/* 毛笔标题 */
+.ink-title {
+  font-size: 2.2rem;
+  color: var(--ink-black);
+  text-align: center;
+  margin-bottom: 20px;
+  letter-spacing: 2px;
+  font-weight: normal;
+  position: relative;
+}
+
+.ink-title::after {
+  content: "";
+  display: block;
+  height: 2px;
+  width: 60%;
+  margin: 10px auto;
+  background: linear-gradient(90deg, transparent, var(--ink-medium), transparent);
+}
+
+/* 毛笔文本 */
+.ink-text {
+  font-size: 1.2rem;
+  line-height: 1.8;
+  color: var(--ink-dark);
+  text-align: justify;
+  margin-bottom: 15px;
+  letter-spacing: 1px;
+}
+
+/* 水墨按钮 */
+.ink-button {
+  background-color: transparent;
+  border: 1px solid var(--ink-medium);
+  color: var(--ink-dark);
+  padding: 10px 20px;
+  margin: 10px 5px;
+  font-size: 1.1rem;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  position: relative;
+  overflow: hidden;
+  font-family: inherit;
+}
+
+.ink-button::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(0, 0, 0, 0.05), transparent);
+  transition: all 0.5s ease;
+}
+
+.ink-button:hover {
+  border-color: var(--ink-black);
+  color: var(--ink-black);
+  transform: translateY(-2px);
+}
+
+.ink-button:hover::before {
+  left: 100%;
+}
+
+.ink-button:active {
+  transform: translateY(0);
+}
+
+/* 水墨状态栏 */
+.ink-status-bar {
+  display: flex;
+  justify-content: space-around;
+  padding: 10px;
+  background-color: var(--paper-white);
+  border-top: 1px solid var(--ink-light);
+  border-bottom: 1px solid var(--ink-light);
+  margin: 15px 0;
+}
+
+.ink-status-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.ink-status-label {
+  font-size: 0.9rem;
+  color: var(--ink-medium);
+  margin-bottom: 5px;
+}
+
+.ink-status-value {
+  font-size: 1.2rem;
+  color: var(--ink-black);
+  font-weight: bold;
+}
+
+/* 滚动区域 */
+.ink-scroll-area {
+  max-height: 400px;
+  overflow-y: auto;
+  padding: 10px;
+  border: 1px solid var(--ink-light);
+  background-color: var(--paper-white);
+  margin: 10px 0;
+}
+
+.ink-scroll-area::-webkit-scrollbar {
+  width: 8px;
+}
+
+.ink-scroll-area::-webkit-scrollbar-track {
+  background: var(--paper-white);
+}
+
+.ink-scroll-area::-webkit-scrollbar-thumb {
+  background-color: var(--ink-light);
+  border-radius: 4px;
+}
+
+/* 存档和加载界面 */
+.ink-save-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px;
+  margin: 5px 0;
+  border: 1px solid var(--ink-light);
+  background-color: var(--paper-white);
+  transition: all 0.3s ease;
+}
+
+.ink-save-item:hover {
+  background-color: var(--paper-yellow);
+  transform: translateX(5px);
+}
+
+.ink-save-date {
+  font-size: 0.9rem;
+  color: var(--ink-medium);
+}
+
+.ink-save-chapter {
+  font-size: 1.1rem;
+  color: var(--ink-dark);
+  font-weight: bold;
+}
+
+/* 响应式设计 */
+@media (max-width: 768px) {
+  .ink-title {
+    font-size: 1.8rem;
+  }
+  
+  .ink-text {
+    font-size: 1rem;
+  }
+  
+  .ink-button {
+    padding: 8px 16px;
+    font-size: 1rem;
+  }
+}
