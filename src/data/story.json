@@ -1,0 +1,55 @@
+{
+  "chapters": [
+    {
+      "id": "chapter1",
+      "title": "初入仙途",
+      "text": "你在青河林砍柴时，发现老槐树渗出剑气。",
+      "options": [
+        {
+          "text": "拿起秘籍",
+          "nextId": "chapter2",
+          "effects": {"修为": 10}
+        },
+        {
+          "text": "转身离开",
+          "nextId": "chapter3",
+          "effects": {}
+        }
+      ]
+    },
+    {
+      "id": "chapter2",
+      "title": "秘籍在手",
+      "text": "你获得了修仙秘籍，感受到一股奇特的能量在体内流动。",
+      "options": [
+        {
+          "text": "开始修炼",
+          "nextId": "chapter4",
+          "effects": {"修为": 5, "灵力": -10}
+        },
+        {
+          "text": "先研究一下",
+          "nextId": "chapter5",
+          "effects": {"因果值": 5}
+        }
+      ]
+    },
+    {
+      "id": "chapter3",
+      "title": "平凡之路",
+      "text": "你决定不理会这些神秘事物，继续过着平凡的生活。",
+      "options": [
+        {
+          "text": "返回查看",
+          "nextId": "chapter1",
+          "effects": {}
+        },
+        {
+          "text": "继续砍柴",
+          "nextId": "chapter6",
+          "effects": {"因果值": -5}
+        }
+      ]
+    }
+  ]
+}
