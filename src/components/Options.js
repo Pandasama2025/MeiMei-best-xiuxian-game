@@ -1,5 +1,5 @@
 // src/components/Options.js
-import React from 'react';
+import React, { memo, useMemo, useCallback } from 'react';
 import '../styles/WaterInkTheme.css';
 import { usePlayerState } from '../store/playerState';
 
@@ -84,19 +84,26 @@ const evaluateCondition = (condition, playerState) => {
   return true;
 };
 
-const Options = ({ options, onSelect }) => {
+// 使用React.memo优化Options组件
+const Options = memo(({ options, onSelect }) => {
   const { playerState } = usePlayerState();
   
-  if (!options || options.length === 0) return null;
-  
-  // 过滤可用选项
-  const availableOptions = options.filter(option => {
-    // 如果没有条件，则选项可用
-    if (!option.conditions) return true;
+  // 使用useMemo缓存可用选项的计算结果
+  const availableOptions = useMemo(() => {
+    if (!options || options.length === 0) return [];
     
-    // 评估条件
-    return evaluateCondition(option.conditions, playerState);
-  });
+    // 过滤可用选项
+    return options.filter(option => {
+      // 如果没有条件，则选项可用
+      if (!option.conditions) return true;
+      
+      // 评估条件
+      return evaluateCondition(option.conditions, playerState);
+    });
+  }, [options, playerState]);
+  
+  // 如果没有选项，直接返回null
+  if (!options || options.length === 0) return null;
   
   // 如果没有可用选项，显示默认选项
   if (availableOptions.length === 0) {
@@ -129,6 +136,6 @@ const Options = ({ options, onSelect }) => {
       </div>
     </div>
   );
-};
+});
 
 export default Options;

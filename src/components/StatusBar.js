@@ -1,11 +1,11 @@
-import React from 'react';
+import React, { memo } from 'react';
 import '../styles/WaterInkTheme.css';
 
 /**
  * 状态栏组件 - 水墨画风格
  * 显示玩家的修为、灵力和因果值，以及成就、背包和修炼按钮
  */
-const StatusBar = ({ playerState, onShowAchievements, onShowInventory, onShowCultivation }) => {
+const StatusBar = memo(({ playerState, onShowAchievements, onShowInventory, onShowCultivation }) => {
   return (
     <div className="ink-status-bar">
       <div className="ink-status-item">
@@ -53,6 +53,6 @@ const StatusBar = ({ playerState, onShowAchievements, onShowInventory, onShowCul
       </div>
     </div>
   );
-};
+});
 
 export default StatusBar;

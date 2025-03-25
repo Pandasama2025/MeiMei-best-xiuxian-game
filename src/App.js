@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import './App.css';
 import './styles/WaterInkTheme.css';
 import storyData from './data/story.json';
@@ -190,40 +190,47 @@ function App() {
     initGameData();
   }, []);
 
-  // 加载章节数据
-  useEffect(() => {
-    if (!gameLoaded || allChapters.length === 0) return;
+  // 使用useMemo缓存当前章节数据
+  const currentChapterData = useMemo(() => {
+    if (!gameLoaded || allChapters.length === 0) return null;
     
     // 查找当前章节
     const chapterData = allChapters.find(c => c.id === currentChapter);
     
     if (chapterData) {
-      setChapter(chapterData);
-      
-      // 检查成就
-      const newUnlocked = checkAchievements(playerState, currentChapter);
-      if (newUnlocked.length > 0) {
-        setNewAchievements(newUnlocked);
-        setTimeout(() => setNewAchievements([]), 5000); // 5秒后清除通知
-      }
-      
-      // 检查章节奖励物品
-      if (chapterData.rewards && chapterData.rewards.items) {
-        chapterData.rewards.items.forEach(item => {
-          addItem(item.id, item.quantity || 1);
-        });
-      }
+      return chapterData;
     } else {
       // 如果找不到指定章节，检查是否有满足触发条件的章节
       const triggeredChapter = findTriggeredChapter(allChapters, playerState);
       
       if (triggeredChapter) {
         console.log(`触发条件章节: ${triggeredChapter.id}`);
-        setCurrentChapter(triggeredChapter.id);
-        setChapter(triggeredChapter);
+        return triggeredChapter;
       } else {
         console.error(`找不到章节: ${currentChapter}`);
+        return null;
       }
+    }
+  }, [currentChapter, playerState, allChapters, gameLoaded, findTriggeredChapter]);
+
+  // 加载章节数据和处理相关效果
+  useEffect(() => {
+    if (!currentChapterData) return;
+    
+    setChapter(currentChapterData);
+    
+    // 检查成就
+    const newUnlocked = checkAchievements(playerState, currentChapter);
+    if (newUnlocked.length > 0) {
+      setNewAchievements(newUnlocked);
+      setTimeout(() => setNewAchievements([]), 5000); // 5秒后清除通知
+    }
+    
+    // 检查章节奖励物品
+    if (currentChapterData.rewards && currentChapterData.rewards.items) {
+      currentChapterData.rewards.items.forEach(item => {
+        addItem(item.id, item.quantity || 1);
+      });
     }
     
     // 根据因果值设置特殊效果样式
@@ -236,22 +243,22 @@ function App() {
     }
     
     // 检查是否是结局章节
-    if (chapterData && chapterData.isEnding) {
+    if (currentChapterData && currentChapterData.isEnding) {
       // 记录结局
-      recordEnding(chapterData.id);
+      recordEnding(currentChapterData.id);
       
       // 检查是否可以开始新周目
       if (newGamePlusRules && canStartNewGamePlus(playerState, newGamePlusRules)) {
         setShowNewGamePlus(true);
       }
     }
-  }, [currentChapter, playerState, allChapters, gameLoaded, newGamePlusRules, findTriggeredChapter]);
+  }, [currentChapterData, playerState, currentChapter, newGamePlusRules]);
 
   /**
    * 处理选项点击
    * @param {Object} option - 选项数据
    */
-  const handleOptionClick = (option) => {
+  const handleOptionClick = useCallback((option) => {
     // 应用效果
     if (option.effects) {
       setLastEffects(option.effects);
@@ -276,13 +283,13 @@ function App() {
       setCurrentChapter(option.nextId);
       saveGame(option.nextId, playerState);
     }
-  };
+  }, [playerState]);
 
   /**
    * 处理战斗结束
    * @param {Object} result - 战斗结果
    */
-  const handleBattleEnd = (result) => {
+  const handleBattleEnd = useCallback((result) => {
     setShowBattle(false);
     
     // 检查战斗成就
@@ -319,18 +326,27 @@ function App() {
     setCurrentChapter(nextId);
     saveGame(nextId, playerState);
     setBattleData(null);
-  };
+  }, [battleData, currentChapter, playerState]);
 
   /**
    * 处理开始新周目
    */
-  const handleStartNewGamePlus = () => {
+  const handleStartNewGamePlus = useCallback(() => {
     if (newGamePlusRules) {
       startNewGame(newGamePlusRules);
       setCurrentChapter('chapter1');
       setShowNewGamePlus(false);
     }
-  };
+  }, [newGamePlusRules]);
+
+  // 处理UI面板显示的回调函数
+  const handleShowAchievements = useCallback(() => setShowAchievements(true), []);
+  const handleCloseAchievements = useCallback(() => setShowAchievements(false), []);
+  const handleShowInventory = useCallback(() => setShowInventory(true), []);
+  const handleCloseInventory = useCallback(() => setShowInventory(false), []);
+  const handleShowCultivation = useCallback(() => setShowCultivation(true), []);
+  const handleCloseCultivation = useCallback(() => setShowCultivation(false), []);
+  const handleCloseNewGamePlus = useCallback(() => setShowNewGamePlus(false), []);
 
   // 渲染加载中状态
   if (!gameLoaded || !chapter) {
@@ -353,9 +369,9 @@ function App() {
       {/* 顶部状态栏 */}
       <StatusBar 
         playerState={playerState}
-        onShowAchievements={() => setShowAchievements(true)}
-        onShowInventory={() => setShowInventory(true)}
-        onShowCultivation={() => setShowCultivation(true)}
+        onShowAchievements={handleShowAchievements}
+        onShowInventory={handleShowInventory}
+        onShowCultivation={handleShowCultivation}
       />
       
       {/* 主要内容区域 */}
@@ -370,7 +386,7 @@ function App() {
           <Options 
             options={chapter.options} 
             playerState={playerState}
-            onOptionClick={handleOptionClick}
+            onSelect={handleOptionClick}
           />
         </div>
       </div>
@@ -398,19 +414,19 @@ function App() {
       {/* 成就面板 */}
       <AchievementsPanel 
         isOpen={showAchievements} 
-        onClose={() => setShowAchievements(false)} 
+        onClose={handleCloseAchievements} 
       />
       
       {/* 背包面板 */}
       <InventoryPanel 
         isOpen={showInventory} 
-        onClose={() => setShowInventory(false)} 
+        onClose={handleCloseInventory} 
       />
       
       {/* 修炼面板 */}
       <Cultivation
         isOpen={showCultivation}
-        onClose={() => setShowCultivation(false)}
+        onClose={handleCloseCultivation}
       />
       
       {/* 新周目提示 */}
@@ -422,7 +438,7 @@ function App() {
             <p>你现在可以开始新的周目，并保留部分进度。</p>
             <div className="new-game-plus-buttons">
               <button onClick={handleStartNewGamePlus}>开始新周目</button>
-              <button onClick={() => setShowNewGamePlus(false)}>继续当前游戏</button>
+              <button onClick={handleCloseNewGamePlus}>继续当前游戏</button>
             </div>
           </div>
         </div>
