@@ -9,6 +9,7 @@ import SceneEffects from './components/SceneEffects';
 import BattleScene from './components/BattleScene';
 import AchievementsPanel from './components/AchievementsPanel';
 import InventoryPanel from './components/InventoryPanel';
+import Cultivation from './components/Cultivation';
 import { usePlayerState, updatePlayerState, saveGame, loadGame, startNewGame } from './store/playerState';
 import { loadAllStoryFiles } from './utils/yamlLoader';
 import { checkAchievements, recordEnding } from './utils/achievements';
@@ -28,6 +29,7 @@ function App() {
   const [showBattle, setShowBattle] = useState(false);
   const [showAchievements, setShowAchievements] = useState(false);
   const [showInventory, setShowInventory] = useState(false);
+  const [showCultivation, setShowCultivation] = useState(false);
   const [newAchievements, setNewAchievements] = useState([]);
   const [showNewGamePlus, setShowNewGamePlus] = useState(false);
   const [newGamePlusRules, setNewGamePlusRules] = useState(null);
@@ -353,6 +355,7 @@ function App() {
         playerState={playerState}
         onShowAchievements={() => setShowAchievements(true)}
         onShowInventory={() => setShowInventory(true)}
+        onShowCultivation={() => setShowCultivation(true)}
       />
       
       {/* 主要内容区域 */}
@@ -402,6 +405,12 @@ function App() {
       <InventoryPanel 
         isOpen={showInventory} 
         onClose={() => setShowInventory(false)} 
+      />
+      
+      {/* 修炼面板 */}
+      <Cultivation
+        isOpen={showCultivation}
+        onClose={() => setShowCultivation(false)}
       />
       
       {/* 新周目提示 */}

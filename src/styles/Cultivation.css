@@ -1,0 +1,329 @@
+/* src/styles/Cultivation.css */
+.cultivation-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.7);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+}
+
+.cultivation-panel {
+  width: 80%;
+  max-width: 800px;
+  max-height: 90vh;
+  background-color: #f5f5f5;
+  border: 2px solid #333;
+  border-radius: 5px;
+  box-shadow: 0 0 20px rgba(0, 0, 0, 0.5);
+  overflow-y: auto;
+  position: relative;
+  animation: fadeIn 0.3s ease-in-out;
+  /* 水墨画风格 */
+  background-image: url('/images/paper-texture.jpg');
+  background-size: cover;
+  box-shadow: 0 0 15px rgba(0, 0, 0, 0.3);
+  border: 8px double #2c2c2c;
+}
+
+.cultivation-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 15px 20px;
+  border-bottom: 2px solid #333;
+  /* 水墨画风格 */
+  background: linear-gradient(to right, rgba(0, 0, 0, 0.1), transparent, rgba(0, 0, 0, 0.1));
+  border-bottom: 2px solid #2c2c2c;
+}
+
+.cultivation-header h2 {
+  margin: 0;
+  font-size: 1.8rem;
+  color: #333;
+  /* 水墨画风格 */
+  font-family: "楷体", "KaiTi", serif;
+  text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.2);
+  letter-spacing: 2px;
+}
+
+.close-button {
+  background: none;
+  border: none;
+  font-size: 1.5rem;
+  cursor: pointer;
+  color: #333;
+  width: 30px;
+  height: 30px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  border-radius: 50%;
+  transition: background-color 0.2s;
+}
+
+.close-button:hover {
+  background-color: rgba(0, 0, 0, 0.1);
+}
+
+.cultivation-content {
+  padding: 20px;
+}
+
+.cultivation-stats {
+  margin-bottom: 20px;
+  padding: 15px;
+  border-radius: 5px;
+  background-color: rgba(255, 255, 255, 0.7);
+  /* 水墨画风格 */
+  border: 1px solid #2c2c2c;
+  box-shadow: inset 0 0 10px rgba(0, 0, 0, 0.1);
+}
+
+.stat-item {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 10px;
+}
+
+.stat-label {
+  font-weight: bold;
+  color: #333;
+  /* 水墨画风格 */
+  font-family: "楷体", "KaiTi", serif;
+}
+
+.stat-value {
+  color: #555;
+  /* 水墨画风格 */
+  font-family: "宋体", "SimSun", serif;
+  font-weight: bold;
+}
+
+.next-realm {
+  margin-top: 15px;
+  padding-top: 10px;
+  border-top: 1px dashed #999;
+  display: flex;
+  justify-content: space-between;
+  color: #666;
+  /* 水墨画风格 */
+  font-family: "楷体", "KaiTi", serif;
+}
+
+.cultivation-action {
+  margin-bottom: 20px;
+  padding: 15px;
+  border-radius: 5px;
+  background-color: rgba(255, 255, 255, 0.7);
+  /* 水墨画风格 */
+  border: 1px solid #2c2c2c;
+  box-shadow: inset 0 0 10px rgba(0, 0, 0, 0.1);
+}
+
+.cultivation-action h3 {
+  margin-top: 0;
+  color: #333;
+  /* 水墨画风格 */
+  font-family: "楷体", "KaiTi", serif;
+  text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.1);
+  border-bottom: 1px solid #ccc;
+  padding-bottom: 5px;
+}
+
+.cultivation-button {
+  display: block;
+  width: 100%;
+  padding: 12px;
+  margin-top: 15px;
+  background-color: #3a3a3a;
+  color: white;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  font-size: 1rem;
+  transition: background-color 0.2s;
+  /* 水墨画风格 */
+  font-family: "楷体", "KaiTi", serif;
+  background: linear-gradient(to right, #2c2c2c, #4a4a4a, #2c2c2c);
+  border: 1px solid #000;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+.cultivation-button:hover {
+  background-color: #555;
+}
+
+.cultivation-button.cooldown {
+  background-color: #999;
+  cursor: not-allowed;
+  /* 水墨画风格 */
+  background: linear-gradient(to right, #777, #999, #777);
+}
+
+.cultivation-progress {
+  margin-top: 15px;
+}
+
+.progress-bar {
+  width: 100%;
+  height: 20px;
+  background-color: #ddd;
+  border-radius: 10px;
+  overflow: hidden;
+  /* 水墨画风格 */
+  border: 1px solid #2c2c2c;
+  box-shadow: inset 0 0 5px rgba(0, 0, 0, 0.2);
+}
+
+.progress-fill {
+  height: 100%;
+  background: linear-gradient(to right, #3a3a3a, #5a5a5a);
+  transition: width 0.5s ease-in-out;
+  /* 水墨画风格 */
+  background: linear-gradient(to right, #2c2c2c, #4a4a4a);
+}
+
+.cultivation-message {
+  margin-top: 15px;
+  padding: 10px;
+  background-color: rgba(255, 255, 255, 0.8);
+  border-radius: 5px;
+  text-align: center;
+  color: #333;
+  /* 水墨画风格 */
+  font-family: "楷体", "KaiTi", serif;
+  border: 1px solid #ccc;
+}
+
+.cultivation-skills {
+  padding: 15px;
+  border-radius: 5px;
+  background-color: rgba(255, 255, 255, 0.7);
+  /* 水墨画风格 */
+  border: 1px solid #2c2c2c;
+  box-shadow: inset 0 0 10px rgba(0, 0, 0, 0.1);
+}
+
+.cultivation-skills h3 {
+  margin-top: 0;
+  color: #333;
+  /* 水墨画风格 */
+  font-family: "楷体", "KaiTi", serif;
+  text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.1);
+  border-bottom: 1px solid #ccc;
+  padding-bottom: 5px;
+}
+
+.skills-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 15px;
+  margin-top: 15px;
+}
+
+.skill-item {
+  display: flex;
+  padding: 10px;
+  background-color: rgba(255, 255, 255, 0.8);
+  border-radius: 5px;
+  /* 水墨画风格 */
+  border: 1px solid #ccc;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.skill-icon {
+  font-size: 2rem;
+  margin-right: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 50px;
+}
+
+.skill-info {
+  flex: 1;
+}
+
+.skill-info h4 {
+  margin: 0 0 5px 0;
+  color: #333;
+  /* 水墨画风格 */
+  font-family: "楷体", "KaiTi", serif;
+}
+
+.skill-info p {
+  margin: 0 0 10px 0;
+  font-size: 0.9rem;
+  color: #666;
+}
+
+.skill-effects {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.skill-effects span {
+  padding: 3px 8px;
+  border-radius: 3px;
+  font-size: 0.8rem;
+  /* 水墨画风格 */
+  font-family: "宋体", "SimSun", serif;
+}
+
+.skill-effects span.positive {
+  background-color: rgba(0, 128, 0, 0.1);
+  color: #006400;
+  border: 1px solid rgba(0, 128, 0, 0.3);
+}
+
+.skill-effects span.negative {
+  background-color: rgba(220, 20, 60, 0.1);
+  color: #8b0000;
+  border: 1px solid rgba(220, 20, 60, 0.3);
+}
+
+.use-skill-button {
+  align-self: flex-end;
+  padding: 5px 10px;
+  background-color: #3a3a3a;
+  color: white;
+  border: none;
+  border-radius: 3px;
+  cursor: pointer;
+  transition: background-color 0.2s;
+  /* 水墨画风格 */
+  font-family: "楷体", "KaiTi", serif;
+  background: linear-gradient(to right, #2c2c2c, #4a4a4a, #2c2c2c);
+  border: 1px solid #000;
+}
+
+.use-skill-button:hover {
+  background-color: #555;
+}
+
+.use-skill-button:disabled {
+  background-color: #999;
+  cursor: not-allowed;
+  /* 水墨画风格 */
+  background: linear-gradient(to right, #777, #999, #777);
+}
+
+.no-skills {
+  text-align: center;
+  color: #666;
+  font-style: italic;
+  margin: 20px 0;
+  /* 水墨画风格 */
+  font-family: "楷体", "KaiTi", serif;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(-20px); }
+  to { opacity: 1; transform: translateY(0); }
+}
