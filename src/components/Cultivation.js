@@ -186,7 +186,7 @@ const Cultivation = ({ isOpen, onClose }) => {
   };
 
   // 使用技能
-  const useSkill = (skill) => {
+  const activateSkill = (skill) => {
     if (playerState.灵力 < Math.abs(skill.effects.灵力 || 0)) {
       setMessage(`灵力不足，无法使用【${skill.name}】`);
       return;
@@ -282,7 +282,7 @@ const Cultivation = ({ isOpen, onClose }) => {
                     </div>
                     <button 
                       className="use-skill-button"
-                      onClick={() => useSkill(skill)}
+                      onClick={() => activateSkill(skill)}
                       disabled={cooldown || (playerState.灵力 < Math.abs(skill.effects.灵力 || 0))}
                     >
                       使用

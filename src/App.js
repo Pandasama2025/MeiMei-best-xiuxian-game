@@ -1,6 +1,8 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import './App.css';
 import './styles/WaterInkTheme.css';
+import './styles/EnhancedWaterInkTheme.css';
+import './styles/LoadingScreen.css';
 import storyData from './data/story.json';
 import Options from './components/Options';
 import StatusBar from './components/StatusBar';
@@ -10,13 +12,20 @@ import BattleScene from './components/BattleScene';
 import AchievementsPanel from './components/AchievementsPanel';
 import InventoryPanel from './components/InventoryPanel';
 import Cultivation from './components/Cultivation';
+import AudioProvider, { useAudio } from './components/AudioManager';
+import SceneBackground from './components/SceneBackground';
+import AnimationEffects from './components/AnimationEffects';
 import { usePlayerState, updatePlayerState, saveGame, loadGame, startNewGame } from './store/playerState';
 import { loadAllStoryFiles } from './utils/yamlLoader';
 import { checkAchievements, recordEnding } from './utils/achievements';
 import { addItem } from './utils/inventory';
 import { canStartNewGamePlus } from './utils/newGamePlus';
+import ErrorBoundary from './components/ErrorBoundary';
 
-function App() {
+/**
+ * 应用主内容组件
+ */
+function AppContent() {
   const [currentChapter, setCurrentChapter] = useState('chapter1');
   const [chapter, setChapter] = useState(null);
   const [allChapters, setAllChapters] = useState([]);
@@ -33,32 +42,28 @@ function App() {
   const [newAchievements, setNewAchievements] = useState([]);
   const [showNewGamePlus, setShowNewGamePlus] = useState(false);
   const [newGamePlusRules, setNewGamePlusRules] = useState(null);
+  const [showAnimation, setShowAnimation] = useState(false);
+  const [animationData, setAnimationData] = useState({ type: 'transition', text: '', position: 'center' });
+  const [sceneType, setSceneType] = useState('default');
+  const [isLoading, setIsLoading] = useState(true);
+  const [loadingError, setLoadingError] = useState(null);
 
-  /**
-   * 评估触发条件
-   * @param {string|Object} condition - 触发条件
-   * @param {Object} playerState - 玩家状态
-   * @returns {boolean} 条件是否满足
-   */
+  const { playBgm, playSfx, audioLoadErrors } = useAudio();
+
   const evaluateTriggerCondition = useCallback((condition, playerState) => {
     if (!condition) return false;
-    
-    // 处理字符串条件（如 "因果值 > 10 & 执念值 < 50"）
+
     if (typeof condition === 'string') {
-      // 分割AND条件
       const andConditions = condition.split('&').map(c => c.trim());
-      
-      // 所有AND条件都必须满足
+
       return andConditions.every(andCond => {
-        // 分割条件部分
         const parts = andCond.match(/([^\s><!=]+)\s*([><!=]+)\s*(\d+)/);
         if (!parts) return false;
-        
+
         const [, statName, operator, valueStr] = parts;
         const statValue = playerState[statName] || 0;
         const compareValue = parseInt(valueStr, 10);
-        
-        // 根据运算符比较值
+
         switch (operator) {
           case '>': return statValue > compareValue;
           case '<': return statValue < compareValue;
@@ -70,37 +75,27 @@ function App() {
         }
       });
     }
-    
-    // 处理对象条件
+
     if (typeof condition === 'object') {
-      // 检查每个属性条件
       return Object.entries(condition).every(([key, value]) => {
-        // 特殊条件：拥有特定解锁
         if (key === 'hasUnlock' && Array.isArray(playerState.特殊解锁)) {
           if (Array.isArray(value)) {
-            // 必须拥有所有指定的解锁
             return value.every(unlock => playerState.特殊解锁.includes(unlock));
           } else {
-            // 必须拥有指定的解锁
             return playerState.特殊解锁.includes(value);
           }
         }
-        
-        // 特殊条件：不拥有特定解锁
+
         if (key === 'notUnlock' && Array.isArray(playerState.特殊解锁)) {
           if (Array.isArray(value)) {
-            // 不能拥有任何指定的解锁
             return !value.some(unlock => playerState.特殊解锁.includes(unlock));
           } else {
-            // 不能拥有指定的解锁
             return !playerState.特殊解锁.includes(value);
           }
         }
-        
-        // 普通属性比较
+
         const playerValue = playerState[key] || 0;
-        
-        // 如果值是对象，检查比较运算符
+
         if (typeof value === 'object' && !Array.isArray(value)) {
           return Object.entries(value).every(([op, compareValue]) => {
             switch (op) {
@@ -114,95 +109,44 @@ function App() {
             }
           });
         }
-        
-        // 简单相等比较
+
         return playerValue === value;
       });
     }
-    
+
     return false;
   }, []);
 
-  /**
-   * 查找满足触发条件的章节
-   * @param {Array} chapters - 所有章节数据
-   * @param {Object} playerState - 玩家状态
-   * @returns {Object|null} 满足条件的章节或null
-   */
   const findTriggeredChapter = useCallback((chapters, playerState) => {
     if (!chapters || chapters.length === 0) return null;
-    
-    // 查找所有带有触发条件的章节
+
     const chaptersWithTriggers = chapters.filter(c => c.trigger);
-    
-    // 按优先级排序（如果有优先级字段）
+
     const sortedChapters = chaptersWithTriggers.sort((a, b) => {
       const priorityA = a.triggerPriority || 0;
       const priorityB = b.triggerPriority || 0;
-      return priorityB - priorityA; // 高优先级在前
+      return priorityB - priorityA;
     });
-    
-    // 检查每个章节的触发条件
+
     for (const chapter of sortedChapters) {
       if (evaluateTriggerCondition(chapter.trigger, playerState)) {
         return chapter;
       }
     }
-    
+
     return null;
   }, [evaluateTriggerCondition]);
 
-  // 初始化游戏数据
-  useEffect(() => {
-    const initGameData = async () => {
-      try {
-        // 尝试加载YAML剧情文件
-        const yamlStoryData = await loadAllStoryFiles();
-        
-        if (yamlStoryData && yamlStoryData.chapters && yamlStoryData.chapters.length > 0) {
-          console.log('成功加载YAML剧情文件');
-          setAllChapters(yamlStoryData.chapters);
-          
-          // 保存多周目规则
-          if (yamlStoryData.newGamePlus) {
-            setNewGamePlusRules(yamlStoryData.newGamePlus);
-          }
-        } else {
-          console.log('使用默认JSON剧情文件');
-          setAllChapters(storyData.chapters);
-        }
-        
-        // 尝试加载存档
-        const savedChapterId = loadGame();
-        if (savedChapterId) {
-          setCurrentChapter(savedChapterId);
-        }
-        
-        setGameLoaded(true);
-      } catch (error) {
-        console.error('初始化游戏数据失败:', error);
-        // 使用默认JSON剧情文件作为备选
-        setAllChapters(storyData.chapters);
-        setGameLoaded(true);
-      }
-    };
-    
-    initGameData();
-  }, []);
-
-  // 使用useMemo缓存当前章节数据
   const currentChapterData = useMemo(() => {
     if (!gameLoaded || allChapters.length === 0) return null;
-    
-    // 查找当前章节
+
     const chapterData = allChapters.find(c => c.id === currentChapter);
-    
+
     if (chapterData) {
       return chapterData;
     } else {
-      // 如果找不到指定章节，检查是否有满足触发条件的章节
       const triggeredChapter = findTriggeredChapter(allChapters, playerState);
-      
+
       if (triggeredChapter) {
         console.log(`触发条件章节: ${triggeredChapter.id}`);
         return triggeredChapter;
@@ -213,232 +157,382 @@ function App() {
     }
   }, [currentChapter, playerState, allChapters, gameLoaded, findTriggeredChapter]);
 
-  // 加载章节数据和处理相关效果
   useEffect(() => {
-    if (!currentChapterData) return;
-    
+    console.log('当前章节数据:', currentChapterData);
     setChapter(currentChapterData);
-    
-    // 检查成就
-    const newUnlocked = checkAchievements(playerState, currentChapter);
-    if (newUnlocked.length > 0) {
-      setNewAchievements(newUnlocked);
-      setTimeout(() => setNewAchievements([]), 5000); // 5秒后清除通知
-    }
-    
-    // 检查章节奖励物品
-    if (currentChapterData.rewards && currentChapterData.rewards.items) {
-      currentChapterData.rewards.items.forEach(item => {
-        addItem(item.id, item.quantity || 1);
-      });
-    }
-    
-    // 根据因果值设置特殊效果样式
-    if (playerState.因果值 >= 50) {
-      setKarmaClass('karma-high');
-    } else if (playerState.因果值 <= -50) {
-      setKarmaClass('karma-low');
-    } else {
-      setKarmaClass('');
-    }
-    
-    // 检查是否是结局章节
-    if (currentChapterData && currentChapterData.isEnding) {
-      // 记录结局
-      recordEnding(currentChapterData.id);
-      
-      // 检查是否可以开始新周目
-      if (newGamePlusRules && canStartNewGamePlus(playerState, newGamePlusRules)) {
-        setShowNewGamePlus(true);
-      }
-    }
-  }, [currentChapterData, playerState, currentChapter, newGamePlusRules]);
+  }, [currentChapterData]);
 
-  /**
-   * 处理选项点击
-   * @param {Object} option - 选项数据
-   */
   const handleOptionClick = useCallback((option) => {
-    // 应用效果
-    if (option.effects) {
-      setLastEffects(option.effects);
-      setShowEffects(true);
-      updatePlayerState(option.effects);
-      
-      // 3秒后隐藏效果通知
-      setTimeout(() => {
-        setShowEffects(false);
-      }, 3000);
-    }
-    
-    // 检查是否有战斗
-    if (option.battle) {
-      setBattleData(option.battle);
-      setShowBattle(true);
-      return;
-    }
-    
-    // 转到下一章节
-    if (option.nextId) {
-      setCurrentChapter(option.nextId);
-      saveGame(option.nextId, playerState);
-    }
-  }, [playerState]);
+    try {
+      try {
+        playSfx('click');
+      } catch (audioError) {
+        console.warn('音频点击失败:', audioError);
+      }
 
-  /**
-   * 处理战斗结束
-   * @param {Object} result - 战斗结果
-   */
+      if (option.battle) {
+        try {
+          playSfx('battle_start');
+          playBgm('battle');
+        } catch (audioError) {
+          console.warn('音频战斗失败:', audioError);
+        }
+        
+        setAnimationData({ type: 'transition', text: option.battle.name || '战斗开始', position: 'center' });
+        setShowAnimation(true);
+        setSceneType('battle');
+        setTimeout(() => {
+          setBattleData(option.battle);
+          setShowBattle(true);
+          setShowAnimation(false);
+        }, 1500);
+        return;
+      }
+
+      if (option.effects) {
+        const newState = updatePlayerState(playerState, option.effects);
+        const achievements = checkAchievements(newState);
+        if (achievements.length > 0) {
+          setNewAchievements(achievements);
+          try {
+            playSfx('success');
+          } catch (audioError) {
+            console.warn('音频成功失败:', audioError);
+          }
+          setAnimationData({ type: 'achievement', text: `获得成就: ${achievements[0].title}`, position: 'top' });
+          setShowAnimation(true);
+          setTimeout(() => {
+            setShowAnimation(false);
+          }, 3000);
+        }
+
+        if (Object.keys(option.effects).length > 0) {
+          setLastEffects(option.effects);
+          setShowEffects(true);
+
+          if (option.effects.生命 && option.effects.生命 > 0) {
+            try {
+              playSfx('heal');
+            } catch (audioError) {
+              console.warn('音频治疗失败:', audioError);
+            }
+            setAnimationData({ type: 'heal', text: `+${option.effects.生命}`, position: 'center' });
+            setShowAnimation(true);
+            setTimeout(() => {
+              setShowAnimation(false);
+            }, 1000);
+          }
+
+          if (option.effects.修为 && option.effects.修为 > 0) {
+            try {
+              playSfx('level_up');
+            } catch (audioError) {
+              console.warn('音频升级失败:', audioError);
+            }
+            setAnimationData({ type: 'levelUp', text: '修为提升', position: 'center' });
+            setShowAnimation(true);
+            setTimeout(() => {
+              setShowAnimation(false);
+            }, 2500);
+          }
+
+          setTimeout(() => {
+            setShowEffects(false);
+          }, 2000);
+        }
+      }
+
+      if (option.ending) {
+        recordEnding(option.ending);
+        try {
+          playSfx('success');
+        } catch (audioError) {
+          console.warn('音频成功失败:', audioError);
+        }
+        setAnimationData({ type: 'transition', text: '结局解锁', position: 'center' });
+        setShowAnimation(true);
+        setTimeout(() => {
+          setShowAnimation(false);
+        }, 1500);
+      }
+
+      if (option.next) {
+        setAnimationData({ type: 'transition', text: '', position: 'center' });
+        setShowAnimation(true);
+        const nextChapter = allChapters.find(c => c.id === option.next);
+        if (nextChapter) {
+          if (nextChapter.tags && nextChapter.tags.includes('peaceful')) {
+            setSceneType('peaceful');
+            try {
+              playBgm('peaceful');
+            } catch (audioError) {
+              console.warn('音频和平失败:', audioError);
+            }
+          } else if (nextChapter.tags && nextChapter.tags.includes('mystery')) {
+            setSceneType('mystery');
+            try {
+              playBgm('mystery');
+            } catch (audioError) {
+              console.warn('音频神秘失败:', audioError);
+            }
+          } else if (nextChapter.tags && nextChapter.tags.includes('dark')) {
+            setSceneType('dark');
+            try {
+              playBgm('mystery');
+            } catch (audioError) {
+              console.warn('音频黑暗失败:', audioError);
+            }
+          } else {
+            setSceneType('default');
+            try {
+              playBgm('main');
+            } catch (audioError) {
+              console.warn('音频主失败:', audioError);
+            }
+          }
+        }
+        setTimeout(() => {
+          setCurrentChapter(option.next);
+          setShowAnimation(false);
+          saveGame(option.next);
+        }, 1500);
+      }
+    } catch (error) {
+      console.error('处理选项点击时发生错误:', error);
+    }
+  }, [playerState, allChapters, playBgm, playSfx]);
+
   const handleBattleEnd = useCallback((result) => {
-    setShowBattle(false);
-    
-    // 检查战斗成就
-    const newUnlocked = checkAchievements(playerState, null, {
-      victory: result.victory,
-      turns: result.turns
-    });
-    
-    if (newUnlocked.length > 0) {
-      setNewAchievements(newUnlocked);
-      setTimeout(() => setNewAchievements([]), 5000);
-    }
-    
-    // 应用战斗奖励
-    if (result.victory && battleData.rewards) {
-      // 属性奖励
-      if (battleData.rewards.stats) {
-        updatePlayerState(battleData.rewards.stats);
+    try {
+      try {
+        playBgm('main');
+      } catch (audioError) {
+        console.warn('音频主失败:', audioError);
       }
-      
-      // 物品奖励
-      if (battleData.rewards.items) {
-        battleData.rewards.items.forEach(item => {
-          addItem(item.id, item.quantity || 1);
-        });
+      setSceneType('default');
+      setShowBattle(false);
+      setBattleData(null);
+
+      if (result.victory) {
+        try {
+          playSfx('success');
+        } catch (audioError) {
+          console.warn('音频成功失败:', audioError);
+        }
+        setAnimationData({ type: 'achievement', text: '战斗胜利', position: 'center' });
+        setShowAnimation(true);
+        setTimeout(() => {
+          setShowAnimation(false);
+        }, 3000);
+
+        if (result.rewards) {
+          const newState = updatePlayerState(playerState, result.rewards);
+          const achievements = checkAchievements(newState);
+          if (achievements.length > 0) {
+            setNewAchievements(achievements);
+          }
+
+          if (Object.keys(result.rewards).length > 0) {
+            setLastEffects(result.rewards);
+            setShowEffects(true);
+            setTimeout(() => {
+              setShowEffects(false);
+            }, 2000);
+          }
+        }
+
+        if (result.next) {
+          setCurrentChapter(result.next);
+          saveGame(result.next);
+        }
+      } else {
+        try {
+          playSfx('failure');
+        } catch (audioError) {
+          console.warn('音频失败失败:', audioError);
+        }
+        setAnimationData({ type: 'damage', text: '战斗失败', position: 'center' });
+        setShowAnimation(true);
+        setTimeout(() => {
+          setShowAnimation(false);
+        }, 1000);
+
+        if (result.failNext) {
+          setCurrentChapter(result.failNext);
+          saveGame(result.failNext);
+        }
       }
+    } catch (error) {
+      console.error('处理战斗结束时发生错误:', error);
     }
-    
-    // 转到相应的下一章节
-    const nextId = result.victory ? 
-      (battleData.nextIdOnVictory || currentChapter) : 
-      (battleData.nextIdOnDefeat || currentChapter);
-    
-    setCurrentChapter(nextId);
-    saveGame(nextId, playerState);
-    setBattleData(null);
-  }, [battleData, currentChapter, playerState]);
+  }, [playerState, playBgm, playSfx]);
 
-  /**
-   * 处理开始新周目
-   */
-  const handleStartNewGamePlus = useCallback(() => {
-    if (newGamePlusRules) {
-      startNewGame(newGamePlusRules);
-      setCurrentChapter('chapter1');
-      setShowNewGamePlus(false);
-    }
-  }, [newGamePlusRules]);
+  useEffect(() => {
+    const loadGameData = async () => {
+      try {
+        console.log('开始加载游戏数据...');
+        setIsLoading(true);
+        
+        // 加载故事数据
+        console.log('尝试加载YAML故事文件...');
+        let loadedStoryData = null;
+        
+        try {
+          loadedStoryData = await loadAllStoryFiles();
+          console.log('YAML故事文件加载结果:', loadedStoryData ? '成功' : '失败');
+        } catch (error) {
+          console.error('加载YAML故事文件时发生错误:', error);
+          loadedStoryData = null;
+        }
+        
+        // 确保故事数据有效，如果无效则使用默认的story.json
+        if (!loadedStoryData || !Array.isArray(loadedStoryData.chapters) || loadedStoryData.chapters.length === 0) {
+          console.log('无法加载YAML故事数据或章节为空，使用默认的story.json');
+          console.log('默认story.json章节数:', Array.isArray(storyData.chapters) ? storyData.chapters.length : 0);
+          
+          loadedStoryData = { 
+            chapters: Array.isArray(storyData.chapters) ? storyData.chapters : [],
+            variables: loadedStoryData?.variables || {},
+            systems: loadedStoryData?.systems || {}
+          };
+        }
+        
+        // 设置章节数据
+        if (Array.isArray(loadedStoryData.chapters)) {
+          console.log(`设置 ${loadedStoryData.chapters.length} 个章节到游戏状态`);
+          setAllChapters(loadedStoryData.chapters);
+          
+          // 输出章节ID列表以便调试
+          const chapterIds = loadedStoryData.chapters.map(c => c.id).join(', ');
+          console.log(`章节ID列表: ${chapterIds}`);
+        } else {
+          console.warn('加载的章节数据不是数组，使用默认的story.json');
+          setAllChapters(Array.isArray(storyData.chapters) ? storyData.chapters : []);
+        }
+        
+        // 初始化变量
+        if (loadedStoryData.variables && typeof loadedStoryData.variables === 'object') {
+          console.log('初始化游戏变量:', Object.keys(loadedStoryData.variables).join(', '));
+          // 这里可以添加变量初始化逻辑
+        }
+        
+        // 加载存档
+        const savedGame = loadGame();
+        if (savedGame && savedGame.chapterId) {
+          console.log(`从存档加载章节: ${savedGame.chapterId}`);
+          setCurrentChapter(savedGame.chapterId);
+        } else {
+          // 如果没有存档，使用第一个章节
+          const firstChapter = loadedStoryData.chapters && loadedStoryData.chapters.length > 0 
+            ? loadedStoryData.chapters[0].id 
+            : 'chapter1';
+          console.log(`没有存档，使用第一个章节: ${firstChapter}`);
+          setCurrentChapter(firstChapter);
+        }
+        
+        setGameLoaded(true);
+        setIsLoading(false);
+        console.log('游戏数据加载完成');
+      } catch (error) {
+        console.error('加载游戏数据失败:', error);
+        // 即使出错，也尝试使用默认的story.json
+        try {
+          console.log('尝试使用默认的story.json作为备用方案...');
+          if (Array.isArray(storyData.chapters)) {
+            setAllChapters(storyData.chapters);
+            setCurrentChapter('chapter1');
+            setGameLoaded(true);
+            setIsLoading(false);
+            console.log('成功使用默认的story.json');
+          } else {
+            throw new Error('默认的story.json无效');
+          }
+        } catch (fallbackError) {
+          console.error('使用默认story.json失败:', fallbackError);
+          setIsLoading(false);
+          setLoadingError('无法加载游戏数据，请刷新页面重试。');
+        }
+      }
+    };
 
-  // 处理UI面板显示的回调函数
-  const handleShowAchievements = useCallback(() => setShowAchievements(true), []);
-  const handleCloseAchievements = useCallback(() => setShowAchievements(false), []);
-  const handleShowInventory = useCallback(() => setShowInventory(true), []);
-  const handleCloseInventory = useCallback(() => setShowInventory(false), []);
-  const handleShowCultivation = useCallback(() => setShowCultivation(true), []);
-  const handleCloseCultivation = useCallback(() => setShowCultivation(false), []);
-  const handleCloseNewGamePlus = useCallback(() => setShowNewGamePlus(false), []);
+    loadGameData();
+  }, []);
 
-  // 渲染加载中状态
-  if (!gameLoaded || !chapter) {
-    return <div className="loading">加载中...</div>;
+  if (isLoading) {
+    return (
+      <div className="loading-screen">
+        <div className="loading-container">
+          <div className="loading-icon">🔄</div>
+          <h2>正在加载修仙世界...</h2>
+          <div className="loading-progress"></div>
+          {loadingError && <div className="loading-error">{loadingError}</div>}
+        </div>
+      </div>
+    );
   }
 
-  // 渲染战斗场景
-  if (showBattle && battleData) {
+  // 确保playerState存在
+  if (!playerState) {
+    console.error('playerState未定义，可能是初始化问题');
     return (
-      <BattleScene 
-        battleData={battleData}
-        playerState={playerState}
-        onBattleEnd={handleBattleEnd}
-      />
+      <div className="loading-screen">
+        <div className="loading-container">
+          <div className="loading-icon">⚠️</div>
+          <h2>加载玩家数据时出错</h2>
+          <p>无法初始化玩家状态，请刷新页面重试。</p>
+          <button 
+            className="ink-button" 
+            onClick={() => window.location.reload()}
+          >
+            刷新页面
+          </button>
+        </div>
+      </div>
     );
   }
 
   return (
-    <div className={`app ${karmaClass}`}>
-      {/* 顶部状态栏 */}
-      <StatusBar 
-        playerState={playerState}
-        onShowAchievements={handleShowAchievements}
-        onShowInventory={handleShowInventory}
-        onShowCultivation={handleShowCultivation}
-      />
-      
-      {/* 主要内容区域 */}
+    <div className="App water-ink-theme">
+      <SceneBackground type={sceneType} animated={true} />
+      {audioLoadErrors && audioLoadErrors.length > 0 && (
+        <div className="audio-status-warning">
+          音频文件加载失败，请检查文件是否存在或网络连接是否正常。游戏将在无音频模式下运行
+        </div>
+      )}
+      <AnimationEffects type={animationData.type} position={animationData.position} text={animationData.text} visible={showAnimation} onComplete={() => setShowAnimation(false)} />
       <div className="game-container">
-        <SceneEffects chapter={chapter} />
-        
-        <div className="chapter-content">
-          <h2>{chapter.title}</h2>
-          <div className="chapter-text">{chapter.text}</div>
-          
-          {/* 选项区域 */}
-          <Options 
-            options={chapter.options} 
-            playerState={playerState}
-            onSelect={handleOptionClick}
-          />
-        </div>
-      </div>
-      
-      {/* 效果通知 */}
-      {showEffects && (
-        <EffectNotification effects={lastEffects} />
-      )}
-      
-      {/* 成就通知 */}
-      {newAchievements.length > 0 && (
-        <div className="achievement-notification">
-          {newAchievements.map((achievement, index) => (
-            <div key={index} className="achievement-alert">
-              <div className="achievement-icon">{achievement.icon}</div>
-              <div className="achievement-info">
-                <h3>解锁成就: {achievement.title}</h3>
-                <p>{achievement.description}</p>
-              </div>
+        <StatusBar onShowAchievements={() => setShowAchievements(true)} onShowInventory={() => setShowInventory(true)} onShowCultivation={() => setShowCultivation(true)} />
+        {gameLoaded && chapter ? (
+          <>
+            <div className="chapter-content">
+              <h2>{chapter.title}</h2>
+              <p>{chapter.content}</p>
             </div>
-          ))}
-        </div>
-      )}
-      
-      {/* 成就面板 */}
-      <AchievementsPanel 
-        isOpen={showAchievements} 
-        onClose={handleCloseAchievements} 
-      />
-      
-      {/* 背包面板 */}
-      <InventoryPanel 
-        isOpen={showInventory} 
-        onClose={handleCloseInventory} 
-      />
-      
-      {/* 修炼面板 */}
-      <Cultivation
-        isOpen={showCultivation}
-        onClose={handleCloseCultivation}
-      />
-      
-      {/* 新周目提示 */}
-      {showNewGamePlus && (
-        <div className="new-game-plus-overlay">
-          <div className="new-game-plus-dialog">
-            <h2>完成结局</h2>
-            <p>恭喜你完成了一个游戏结局！</p>
-            <p>你现在可以开始新的周目，并保留部分进度。</p>
-            <div className="new-game-plus-buttons">
-              <button onClick={handleStartNewGamePlus}>开始新周目</button>
-              <button onClick={handleCloseNewGamePlus}>继续当前游戏</button>
+            <Options options={chapter.options} onOptionClick={handleOptionClick} playerState={playerState} />
+            {showEffects && <EffectNotification effects={lastEffects} />}
+            {chapter.effects && <SceneEffects effects={chapter.effects} />}
+          </>
+        ) : (
+          <div className="loading">加载中...</div>
+        )}
+      </div>
+      {showBattle && battleData && <BattleScene battleData={battleData} playerState={playerState} onBattleEnd={handleBattleEnd} />}
+      {showAchievements && <AchievementsPanel onClose={() => setShowAchievements(false)} newAchievements={newAchievements} onClearNew={() => setNewAchievements([])} />}
+      {showInventory && <InventoryPanel onClose={() => setShowInventory(false)} />}
+      {showCultivation && <Cultivation onClose={() => setShowCultivation(false)} />}
+      {showNewGamePlus && newGamePlusRules && (
+        <div className="modal new-game-plus">
+          <div className="modal-content">
+            <h2>开启新的修仙之旅</h2>
+            <p>你已经解锁了新的开始。在新的旅程中，你将保留:</p>
+            <ul>
+              {newGamePlusRules.keep.map((item, index) => (
+                <li key={index}>{item}</li>
+              ))}
+            </ul>
+            <div className="modal-buttons">
+              <button onClick={() => startNewGame(newGamePlusRules)}>开始新的旅程</button>
+              <button onClick={() => setShowNewGamePlus(false)}>返回</button>
             </div>
           </div>
         </div>
@@ -447,4 +541,17 @@ function App() {
   );
 }
 
-export default App;
+/**
+ * 带音频管理和错误边界的应用组件
+ */
+function AppWithAudio() {
+  return (
+    <ErrorBoundary>
+      <AudioProvider>
+        <AppContent />
+      </AudioProvider>
+    </ErrorBoundary>
+  );
+}
+
+export default AppWithAudio;

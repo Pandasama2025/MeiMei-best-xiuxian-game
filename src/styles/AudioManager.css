@@ -1,0 +1,175 @@
+/* 音频管理器样式 */
+
+/* 音频交互提示 */
+.audio-prompt {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.7);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+  cursor: pointer;
+}
+
+.audio-prompt-content {
+  background-color: #1a1a1a;
+  border: 2px solid #4a4a4a;
+  border-radius: 8px;
+  padding: 2rem;
+  text-align: center;
+  max-width: 400px;
+  box-shadow: 0 0 20px rgba(0, 0, 0, 0.5);
+  animation: fadeIn 0.3s ease-in-out;
+}
+
+.audio-prompt h3 {
+  font-size: 1.5rem;
+  margin-bottom: 1rem;
+  color: #f0f0f0;
+}
+
+.audio-prompt p {
+  margin-bottom: 1.5rem;
+  color: #cccccc;
+}
+
+.audio-prompt .ink-button {
+  padding: 0.75rem 1.5rem;
+  font-size: 1rem;
+  background: linear-gradient(135deg, #3a6186, #89253e);
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.audio-prompt .ink-button:hover {
+  transform: scale(1.05);
+  box-shadow: 0 0 15px rgba(138, 43, 226, 0.5);
+}
+
+/* 音频加载错误样式 */
+.audio-load-errors {
+  margin-bottom: 1.5rem;
+  padding: 0.75rem;
+  background-color: rgba(255, 50, 50, 0.1);
+  border-radius: 4px;
+  border-left: 3px solid #ff5050;
+}
+
+.audio-warning {
+  color: #ff5050;
+  font-weight: bold;
+  margin-bottom: 0.5rem;
+}
+
+.audio-warning-detail {
+  color: #cccccc;
+  font-size: 0.9rem;
+  margin-bottom: 0;
+}
+
+.audio-status-warning {
+  background-color: rgba(255, 50, 50, 0.1);
+  color: #ff5050;
+  padding: 0.5rem;
+  border-radius: 4px;
+  margin-bottom: 0.75rem;
+  font-size: 0.8rem;
+  text-align: center;
+  animation: pulse 2s infinite;
+}
+
+/* 音频控制面板 */
+.audio-controls {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  background-color: rgba(26, 26, 26, 0.8);
+  border-radius: 8px;
+  padding: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  z-index: 100;
+  box-shadow: 0 0 10px rgba(0, 0, 0, 0.3);
+}
+
+.audio-control-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.audio-control-label {
+  color: #f0f0f0;
+  font-size: 0.9rem;
+  min-width: 60px;
+}
+
+.audio-toggle {
+  width: 40px;
+  height: 20px;
+  background-color: #555;
+  border-radius: 10px;
+  position: relative;
+  cursor: pointer;
+  transition: background-color 0.3s;
+}
+
+.audio-toggle.active {
+  background-color: #89253e;
+}
+
+.audio-toggle::after {
+  content: '';
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 16px;
+  height: 16px;
+  background-color: white;
+  border-radius: 50%;
+  transition: transform 0.3s;
+}
+
+.audio-toggle.active::after {
+  transform: translateX(20px);
+}
+
+.volume-slider {
+  flex: 1;
+  height: 4px;
+  -webkit-appearance: none;
+  appearance: none;
+  background: #555;
+  outline: none;
+  border-radius: 2px;
+}
+
+.volume-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: #f0f0f0;
+  cursor: pointer;
+}
+
+/* 动画 */
+@keyframes fadeIn {
+  from { opacity: 0; transform: scale(0.9); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+@keyframes pulse {
+  0% { opacity: 0.7; }
+  50% { opacity: 1; }
+  100% { opacity: 0.7; }
+}
